@@ -65,7 +65,7 @@ end
 
 
 local main = New("Frame", {
-    Name = "Panel", Parent = gui, Size = UDim2.new(0, 280, 0, 440), Position = UDim2.new(0.5, -140, 1.2, 0),
+    Name = "Panel", Parent = gui, Size = UDim2.new(0, 280, 0, 500), Position = UDim2.new(0.5, -140, 1.2, 0),
     BackgroundTransparency = 0.3, BorderSizePixel = 0, Active = true, Draggable = true, Visible = false
 })
 local main_corner = New("UICorner", {Parent = main, CornerRadius = UDim.new(0, 15)})
@@ -75,7 +75,7 @@ local page_container = New("Frame", {Name = "PageContainer", Parent = main, Size
 local page1 = New("Frame", {Name = "Page1", Parent = page_container, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1})
 local page2 = New("Frame", {Name = "Page2", Parent = page_container, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false})
 
-local header = New("TextLabel", { Parent = page1, Text = "عدم اللاق BY FARES V2 ANTI LAG ByFARESV2", Font = settings.font, TextSize = 11, Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0,0,0.05,0), BackgroundTransparency = 1 })
+local header = New("TextLabel", { Parent = page1, Text = "عدم اللاق BY FARES V3 ANTI LAG ByFARESV3", Font = settings.font, TextSize = 11, Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0,0,0.05,0), BackgroundTransparency = 1 })
 local stats_frame = New("Frame", { Parent = page1, Size = UDim2.new(1, -20, 0, 70), Position = UDim2.new(0, 10, 0, 40), BackgroundTransparency = 1 })
 local fps_lbl = New("TextLabel", {Parent = stats_frame, Text = "FPS: --", Font = settings.font, TextSize = 14, Size = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1})
 local ping_lbl = New("TextLabel", {Parent = stats_frame, Text = "PING: -- ms", Font = settings.font, TextSize = 14, Size = UDim2.new(0.5, 0, 0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), BackgroundTransparency = 1})
@@ -134,6 +134,16 @@ CreateButton(page1, "[ ANTI-LAG V2 ]", UDim2.new(0.05, 0, start_y + 3 * (button_
 CreateButton(page1, "[ ANTI-LAG V3 ]", UDim2.new(0.05, 0, start_y + 4 * (button_height + button_gap) / main.AbsoluteSize.Y, 0), UDim2.new(0.9, 0, 0, button_height), function(b) b.Active = false; b.Text = "جاري التفعيل..."; pcall(function() loadstring(game:HttpGet("https://pastebin.com/raw/BNgMHGJC"))() end); b.BackgroundColor3 = current_colors.ok; b.TextColor3 = current_colors.bg; b.Text = "تم التفعيل بنجاح"; task.wait(10); lp:Kick("تم تفعيل السكربت √ ادخل للماب مرة اخرى ولكن لا تفعل زر Anti Lag v3 لانه بلفعل تم التفعيل") end)
 
 
+
+CreateButton(page1, "[ السكربت القديم - old script ]", UDim2.new(0.05, 0, start_y + 5 * (button_height + button_gap) / main.AbsoluteSize.Y, 0), UDim2.new(0.9, 0, 0, button_height), function(b)
+    
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ook314745-svg/Fpsold/refs/heads/main/Oldfps"))()
+    
+    ShowNotification("تم تفعيل السكربت القديم بنجاح!", current_colors.ok)
+end)
+
+
+
 New("TextLabel", { Parent = page2, Text = "اختار لون", Font = settings.font, TextColor3 = Color3.new(1,1,1), TextSize = 18, Position = UDim2.new(0, 0, 0.1, 0), Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1 })
 local theme_button_size = UDim2.new(0.4, 0, 0, 50)
 for i, name in ipairs(theme_order) do
@@ -176,7 +186,7 @@ toggle_btn.MouseButton1Click:Connect(function()
     is_open = not is_open
     if is_open then
         main.Visible = true
-        ts:Create(main, settings.tween_info, {Position = UDim2.new(0.5, -140, 0.5, -220), BackgroundTransparency = 0.3}):Play() 
+        ts:Create(main, settings.tween_info, {Position = UDim2.new(0.5, -140, 0.5, -250), BackgroundTransparency = 0.3}):Play() 
     else
         local t = ts:Create(main, settings.tween_info, {Position = UDim2.new(0.5, -140, 1.2, 0), BackgroundTransparency = 1})
         t:Play(); t.Completed:Wait(); main.Visible = false
