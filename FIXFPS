@@ -1,207 +1,170 @@
 
 
-
-local srv = setmetatable({}, {
-    __index = function(t, k)
-        return game:GetService(k)
-    end
-})
+local srv = setmetatable({}, { __index = function(t, k) return game:GetService(k) end })
 
 local lp = srv.Players.LocalPlayer
 local cg = srv.CoreGui
 local ts = srv.TweenService
-local uis = srv.UserInputService
-local rs = srv.RunService
-local lighting = srv.Lighting
 local stats = srv.Stats
+local lighting = srv.Lighting
+local RunService = srv.RunService
 
 
-local cfg = {
-    bg = Color3.fromHex("#080808"),
-    acc = Color3.fromHex("#00ffa3"),
-    txt = Color3.fromHex("#ffffff"),
-    faded = Color3.fromHex("#888888"),
-    ok = Color3.fromHex("#00ff7f"),
-    err = Color3.fromHex("#ff4444"),
-    font = Enum.Font.RobotoMono,
-    tween_info = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+local themes = {
+    Matrix = { bg = "#080808", acc = "#00ffa3", txt = "#ffffff", faded = "#888888", ok = "#00ff7f", err = "#ff4444" },
+    Gold = { bg = "#100f0d", acc = "#ffd700", txt = "#ffffff", faded = "#a0a0a0", ok = "#ffc400", err = "#ff4444" },
+    Diamond = { bg = "#0f1a1e", acc = "#00bfff", txt = "#ffffff", faded = "#90c3d4", ok = "#87ceeb", err = "#ff4444" },
+    Edex = { bg = "#1a110a", acc = "#ff8c00", txt = "#ffffff", faded = "#b5651d", ok = "#ffa500", err = "#ff4444" },
+    Dark = { bg = "#050505", acc = "#808080", txt = "#e0e0e0", faded = "#666666", ok = "#a9a9a9", err = "#ff4444" },
+    Black = { bg = "#000000", acc = "#ffffff", txt = "#ffffff", faded = "#cccccc", ok = "#ffffff", err = "#ff4444" }
 }
+local theme_order = {"Matrix", "Gold", "Diamond", "Edex", "Dark", "Black"}
+local current_theme_name = "Matrix"
+local current_colors = {}
 
+
+local settings = {
+    font = Enum.Font.RobotoMono,
+    tween_info = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+    click_sound = "rbxassetid://4306994267"
+}
 
 local function New(class, props)
     local obj = Instance.new(class)
-    for k, v in pairs(props) do
-        obj[k] = v
-    end
+    for k, v in pairs(props) do obj[k] = v end
     return obj
 end
 
+local gui = New("ScreenGui", {Name = "VIP_FPS_FIXED", Parent = cg, ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
 
-local gui = New("ScreenGui", {Name = "VIP_FPS_FIXED", Parent = cg, ResetOnSpawn = false})
+local function ShowNotification(text, color)
+    local notif = New("Frame", {
+        Parent = gui, Size = UDim2.new(0, 280, 0, 40), Position = UDim2.new(0.5, -140, -0.1, 0),
+        BackgroundColor3 = current_colors.bg, BackgroundTransparency = 0.2, BorderSizePixel = 0
+    })
+    New("UICorner", {Parent = notif, CornerRadius = UDim.new(0, 8)})
+    New("UIStroke", {Parent = notif, Color = color, Thickness = 1})
+    New("TextLabel", {
+        Parent = notif, Text = text, Font = settings.font, TextColor3 = color,
+        TextSize = 14, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1
+    })
+    local t_info = TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+    ts:Create(notif, t_info, {Position = UDim2.new(0.5, -140, 0.02, 0)}):Play()
+    task.wait(3)
+    local hide_t = ts:Create(notif, t_info, {Position = UDim2.new(0.5, -140, -0.1, 0)})
+    hide_t:Play()
+    hide_t.Completed:Connect(function() notif:Destroy() end)
+end
 
-
-local toggle_btn = New("ImageButton", {
-    Name = "ToggleIcon",
-    Parent = gui,
-    Size = UDim2.new(0, 50, 0, 50),
-    Position = UDim2.new(0.05, 0, 0.1, 0),
-    BackgroundColor3 = cfg.bg,
-    Image = "rbxassetid://6031094678",
-    ImageColor3 = cfg.acc,
-    Active = true,
-    Draggable = true,
-    BackgroundTransparency = 0.4
-})
-New("UICorner", {Parent = toggle_btn, CornerRadius = UDim.new(1, 0)})
-New("UIStroke", {Parent = toggle_btn, Color = cfg.acc, Thickness = 2})
+local function PlaySound()
+    local sound = Instance.new("Sound", gui)
+    sound.SoundId = settings.click_sound; sound.Volume = 0.7
+    sound:Play()
+    game.Debris:AddItem(sound, 2)
+end
 
 
 local main = New("Frame", {
-    Name = "Panel",
-    Parent = gui,
-    Size = UDim2.new(0, 280, 0, 320),
-    Position = UDim2.new(0.5, -140, 1.2, 0),
-    BackgroundColor3 = cfg.bg,
-    BackgroundTransparency = 0.3,
-    BorderSizePixel = 0,
-    Active = true,
-    Draggable = true,
-    Visible = false
+    Name = "Panel", Parent = gui, Size = UDim2.new(0, 280, 0, 440), Position = UDim2.new(0.5, -140, 1.2, 0),
+    BackgroundTransparency = 0.3, BorderSizePixel = 0, Active = true, Draggable = true, Visible = false
 })
-New("UICorner", {Parent = main, CornerRadius = UDim.new(0, 15)})
-New("UIStroke", {Parent = main, Color = cfg.acc, Thickness = 1.5, Transparency = 0.5})
+local main_corner = New("UICorner", {Parent = main, CornerRadius = UDim.new(0, 15)})
+local main_stroke = New("UIStroke", {Parent = main, Thickness = 1.5, Transparency = 0.5})
 
+local page_container = New("Frame", {Name = "PageContainer", Parent = main, Size = UDim2.new(1, 0, 1, -40), BackgroundTransparency = 1})
+local page1 = New("Frame", {Name = "Page1", Parent = page_container, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1})
+local page2 = New("Frame", {Name = "Page2", Parent = page_container, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false})
 
-local header = New("TextLabel", {
-    Parent = main,
-    Text = "عدم اللاق BY FARES",
-    Font = cfg.font,
-    TextColor3 = cfg.acc,
-    TextSize = 16,
-    Size = UDim2.new(1, 0, 0, 40),
-    BackgroundTransparency = 1
+local header = New("TextLabel", { Parent = page1, Text = "عدم اللاق BY FARES V2 ANTI LAG ByFARESV2", Font = settings.font, TextSize = 11, Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0,0,0.05,0), BackgroundTransparency = 1 })
+local stats_frame = New("Frame", { Parent = page1, Size = UDim2.new(1, -20, 0, 70), Position = UDim2.new(0, 10, 0, 40), BackgroundTransparency = 1 })
+local fps_lbl = New("TextLabel", {Parent = stats_frame, Text = "FPS: --", Font = settings.font, TextSize = 14, Size = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1})
+local ping_lbl = New("TextLabel", {Parent = stats_frame, Text = "PING: -- ms", Font = settings.font, TextSize = 14, Size = UDim2.new(0.5, 0, 0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), BackgroundTransparency = 1})
+local mem_lbl = New("TextLabel", {Parent = stats_frame, Text = "MEM: -- MB", Font = settings.font, TextSize = 14, Size = UDim2.new(1, 0, 0.5, 0), Position = UDim2.new(0, 0, 0.5, 0), BackgroundTransparency = 1})
+
+local toggle_btn = New("ImageButton", {
+    Name = "ToggleIcon", Parent = gui, Size = UDim2.new(0, 50, 0, 50), Position = UDim2.new(0.05, 0, 0.1, 0),
+    Image = "rbxassetid://6031094678", Active = true, Draggable = true, BackgroundTransparency = 0.4
 })
+local toggle_btn_corner = New("UICorner", {Parent = toggle_btn, CornerRadius = UDim.new(1, 0)})
+local toggle_btn_stroke = New("UIStroke", {Parent = toggle_btn, Thickness = 2})
 
+local function UpdateTheme()
+    local theme_hex_values = themes[current_theme_name]
+    for k, v in pairs(theme_hex_values) do current_colors[k] = Color3.fromHex(v) end
 
-local stats_frame = New("Frame", {
-    Parent = main,
-    Size = UDim2.new(1, -20, 0, 70),
-    Position = UDim2.new(0, 10, 0, 40),
-    BackgroundTransparency = 1
-})
-local fps_lbl = New("TextLabel", {Parent = stats_frame, Text = "FPS: --", Font = cfg.font, TextColor3 = cfg.txt, TextSize = 14, Size = UDim2.new(0.5, 0, 0.5, 0), BackgroundTransparency = 1})
-local ping_lbl = New("TextLabel", {Parent = stats_frame, Text = "PING: -- ms", Font = cfg.font, TextColor3 = cfg.txt, TextSize = 14, Size = UDim2.new(0.5, 0, 0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), BackgroundTransparency = 1})
-local mem_lbl = New("TextLabel", {Parent = stats_frame, Text = "MEM: -- MB", Font = cfg.font, TextColor3 = cfg.txt, TextSize = 14, Size = UDim2.new(1, 0, 0.5, 0), Position = UDim2.new(0, 0, 0.5, 0), BackgroundTransparency = 1})
+    main.BackgroundColor3 = current_colors.bg; main_stroke.Color = current_colors.acc
+    toggle_btn.BackgroundColor3 = current_colors.bg; toggle_btn.ImageColor3 = current_colors.acc; toggle_btn_stroke.Color = current_colors.acc
+    header.TextColor3 = current_colors.acc
+    
+    for _, p in ipairs({page1, page2, main}) do
+        for _, b in ipairs(p:GetChildren()) do
+            if b:IsA("TextButton") then
+                b.TextColor3 = current_colors.txt
+                local stroke = b:FindFirstChildOfClass("UIStroke")
+                if stroke then stroke.Color = current_colors.acc end
+            end
+        end
+    end
+    
+    fps_lbl.TextColor3 = current_colors.txt; ping_lbl.TextColor3 = current_colors.txt; mem_lbl.TextColor3 = current_colors.txt
+end
 
-
-local function CreateButton(text, pos, callback)
+local function CreateButton(parent, text, pos, size, callback)
     local b = New("TextButton", {
-        Parent = main,
-        Text = "[ " .. text .. " ]",
-        Font = cfg.font,
-        TextColor3 = cfg.txt,
-        TextSize = 14,
-        Size = UDim2.new(0.9, 0, 0, 45),
-        Position = pos,
-        BackgroundColor3 = Color3.fromRGB(20, 20, 20),
-        BorderSizePixel = 0,
-        AutoButtonColor = true
+        Parent = parent, Text = text, Font = settings.font, TextSize = 14,
+        Size = size, Position = pos, BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+        BorderSizePixel = 0, AutoButtonColor = true
     })
     New("UICorner", {Parent = b, CornerRadius = UDim.new(0, 8)})
-    New("UIStroke", {Parent = b, Color = cfg.acc, Thickness = 1, Transparency = 0.6})
-    b.MouseButton1Click:Connect(callback)
+    New("UIStroke", {Parent = b, Thickness = 1, Transparency = 0.6})
+    b.MouseButton1Click:Connect(function() PlaySound(); callback(b) end)
     return b
 end
 
 
+local button_height = 45
+local button_gap = 10
+local start_y = 0.30
+
+CreateButton(page1, "[ BOOSTER (CPU/GPU) ]", UDim2.new(0.05, 0, start_y, 0), UDim2.new(0.9, 0, 0, button_height), function() local function UltimateBoost() pcall(function() settings().Rendering.QualityLevel = 1; lighting.GlobalShadows = false; lighting.FogEnd = 9e7; lighting.Technology = Enum.Technology.Compatibility end); for _, v in pairs(game:GetDescendants()) do if v:IsA("BasePart") then v.CastShadow = false; v.Material = Enum.Material.SmoothPlastic; v.Reflectance = 0 elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then v.Enabled = false elseif v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 0.9 elseif v:IsA("PostEffect") then v.Enabled = false end end; if setfpscap then setfpscap(240) end end; UltimateBoost(); ts:Create(main, settings.tween_info, {BackgroundColor3 = current_colors.ok}):Play(); task.wait(0.5); ts:Create(main, settings.tween_info, {BackgroundColor3 = current_colors.bg}):Play() end)
+CreateButton(page1, "[ CLEAN_MEMORY (RAM) ]", UDim2.new(0.05, 0, start_y + (button_height + button_gap) / main.AbsoluteSize.Y, 0), UDim2.new(0.9, 0, 0, button_height), function() local function CleanMemory() local before = gcinfo(); for i = 1, 1000 do local t = {} end; return before - gcinfo() end; local cleaned = CleanMemory(); ShowNotification("تم تنظيف " .. math.abs(cleaned) .. " KB من الذاكرة", current_colors.ok) end)
+CreateButton(page1, "[ FIX_PING (NETWORK) ]", UDim2.new(0.05, 0, start_y + 2 * (button_height + button_gap) / main.AbsoluteSize.Y, 0), UDim2.new(0.9, 0, 0, button_height), function() local function FixPing() pcall(function() settings().Network.IncomingReplicationLag = 0; settings().Physics.PhysicsEnvironmentalThrottle = Enum.EnviromentalPhysicsThrottle.Disabled end) end; FixPing() end)
+CreateButton(page1, "[ ANTI-LAG V2 ]", UDim2.new(0.05, 0, start_y + 3 * (button_height + button_gap) / main.AbsoluteSize.Y, 0), UDim2.new(0.9, 0, 0, button_height), function(b) b.Active = false; b.Text = "جاري التفعيل..."; pcall(function() loadstring(game:HttpGet("https://pastebin.com/raw/4pV38FuN"))() end); b.BackgroundColor3 = current_colors.ok; b.TextColor3 = current_colors.bg; b.Text = "تم التفعيل بنجاح"; task.wait(10); lp:Kick("تم تفعيل السكربت √ ادخل للماب مرة اخرى ولكن لا تفعل زر Anti Lag v2 لانه بلفعل تم التفعيل") end)
+
+CreateButton(page1, "[ ANTI-LAG V3 ]", UDim2.new(0.05, 0, start_y + 4 * (button_height + button_gap) / main.AbsoluteSize.Y, 0), UDim2.new(0.9, 0, 0, button_height), function(b) b.Active = false; b.Text = "جاري التفعيل..."; pcall(function() loadstring(game:HttpGet("https://pastebin.com/raw/BNgMHGJC"))() end); b.BackgroundColor3 = current_colors.ok; b.TextColor3 = current_colors.bg; b.Text = "تم التفعيل بنجاح"; task.wait(10); lp:Kick("تم تفعيل السكربت √ ادخل للماب مرة اخرى ولكن لا تفعل زر Anti Lag v3 لانه بلفعل تم التفعيل") end)
 
 
-local function CleanMemory()
-    local before = gcinfo() 
-    
-    for i = 1, 1000 do local t = {} end
-    local after = gcinfo()
-    return before - after
+New("TextLabel", { Parent = page2, Text = "اختار لون", Font = settings.font, TextColor3 = Color3.new(1,1,1), TextSize = 18, Position = UDim2.new(0, 0, 0.1, 0), Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1 })
+local theme_button_size = UDim2.new(0.4, 0, 0, 50)
+for i, name in ipairs(theme_order) do
+    local row = math.floor((i - 1) / 2)
+    local col = (i - 1) % 2
+    local pos = UDim2.new(0.075 + (col * 0.45), 0, 0.25 + (row * 0.2), 0)
+    CreateButton(page2, name, pos, theme_button_size, function() current_theme_name = name; UpdateTheme() end)
 end
 
 
-local function UltimateBoost()
-    
-    pcall(function()
-        settings().Rendering.QualityLevel = 1
-        lighting.GlobalShadows = false
-        lighting.FogEnd = 9e7
-        lighting.Brightness = 1
-        lighting.Technology = Enum.Technology.Compatibility 
-    end)
-
-    
-    for _, v in pairs(game:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CastShadow = false
-            v.Material = Enum.Material.SmoothPlastic
-            v.Reflectance = 0
-        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
-            v.Enabled = false
-        elseif v:IsA("Decal") or v:IsA("Texture") then
-            v.Transparency = 0.9 
-        elseif v:IsA("PostEffect") or v:IsA("BloomEffect") or v:IsA("BlurEffect") then
-            v.Enabled = false 
-        end
-    end
-
-    
-    if setfpscap then
-        setfpscap(240) 
-    end
-end
+local footer = New("Frame", {Parent = main, Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0, 0, 1, -40), BackgroundTransparency = 1})
+local footer_line = New("Frame", {Parent = footer, Size = UDim2.new(0.9, 0, 0, 1), Position = UDim2.new(0.05, 0, 0, 0), BackgroundColor3 = Color3.fromRGB(255,255,255), BackgroundTransparency = 0.8})
+CreateButton(footer, "<", UDim2.new(0.1, 0, 0.2, 0), UDim2.new(0.3, 0, 0, 30), function() page1.Visible = true; page2.Visible = false end)
+CreateButton(footer, ">", UDim2.new(0.6, 0, 0.2, 0), UDim2.new(0.3, 0, 0, 30), function() page1.Visible = false; page2.Visible = true end)
 
 
-local function FixPing()
-    pcall(function()
-        settings().Network.IncomingReplicationLag = 0
-        settings().Physics.PhysicsEnvironmentalThrottle = Enum.EnviromentalPhysicsThrottle.Disabled
-    end)
-end
+local last_update = 0
+RunService.Heartbeat:Connect(function(step)
+    if tick() - last_update < 1 then return end
+    last_update = tick()
 
-
-CreateButton("BOOSTER (CPU/GPU)", UDim2.new(0.05, 0, 0.35, 0), function()
-    UltimateBoost()
-    ts:Create(main, cfg.tween_info, {BackgroundColor3 = cfg.ok}):Play()
-    task.wait(0.5)
-    ts:Create(main, cfg.tween_info, {BackgroundColor3 = cfg.bg}):Play()
-end)
-
-CreateButton("CLEAN_MEMORY (RAM)", UDim2.new(0.05, 0, 0.53, 0), function()
-    local cleaned = CleanMemory()
-    warn(">> MEMORY_CLEANED: " .. math.abs(cleaned) .. " KB")
-end)
-
-CreateButton("FIX_PING (NETWORK)", UDim2.new(0.05, 0, 0.71, 0), function()
-    FixPing()
-end)
-
-
-task.spawn(function()
-    local last_tick = tick()
-    local frames = 0
-    while task.wait() do
-        frames = frames + 1
-        if tick() - last_tick >= 1 then
-            local current_fps = math.floor(frames)
-            local current_ping = math.floor(lp:GetNetworkPing() * 1000)
-            local current_mem = math.floor(stats:GetTotalMemoryUsageMb())
-            
-            fps_lbl.Text = "FPS: " .. current_fps
-            ping_lbl.Text = "PING: " .. current_ping .. " ms"
-            mem_lbl.Text = "MEM: " .. current_mem .. " MB"
-            
-            
-            fps_lbl.TextColor3 = current_fps >= 55 and cfg.ok or (current_fps >= 30 and cfg.acc or cfg.err)
-            ping_lbl.TextColor3 = current_ping <= 100 and cfg.ok or (current_ping <= 250 and cfg.acc or cfg.err)
-            
-            frames = 0
-            last_tick = tick()
+    if main.Visible then
+        local current_fps = math.floor(1 / step)
+        local current_ping = math.floor(lp:GetNetworkPing() * 1000)
+        local current_mem = math.floor(stats:GetTotalMemoryUsageMb())
+        
+        fps_lbl.Text = "FPS: " .. current_fps; ping_lbl.Text = "PING: " .. current_ping .. " ms"; mem_lbl.Text = "MEM: " .. current_mem .. " MB"
+        
+        if current_colors.ok then
+            fps_lbl.TextColor3 = current_fps >= 55 and current_colors.ok or (current_fps >= 30 and current_colors.acc or current_colors.err)
+            ping_lbl.TextColor3 = current_ping <= 100 and current_colors.ok or (current_ping <= 250 and current_colors.acc or current_colors.err)
         end
     end
 end)
@@ -209,28 +172,16 @@ end)
 
 local is_open = false
 toggle_btn.MouseButton1Click:Connect(function()
+    PlaySound()
     is_open = not is_open
     if is_open then
         main.Visible = true
-        ts:Create(main, cfg.tween_info, {Position = UDim2.new(0.5, -140, 0.5, -160), BackgroundTransparency = 0.3}):Play()
+        ts:Create(main, settings.tween_info, {Position = UDim2.new(0.5, -140, 0.5, -220), BackgroundTransparency = 0.3}):Play() 
     else
-        local t = ts:Create(main, cfg.tween_info, {Position = UDim2.new(0.5, -140, 1.2, 0), BackgroundTransparency = 1})
-        t:Play()
-        t.Completed:Wait()
-        main.Visible = false
+        local t = ts:Create(main, settings.tween_info, {Position = UDim2.new(0.5, -140, 1.2, 0), BackgroundTransparency = 1})
+        t:Play(); t.Completed:Wait(); main.Visible = false
     end
 end)
 
 
-
-
-New("TextLabel", {
-    Parent = main,
-    Text = "V1 FPS BOOSTER /PING POOSTER by Fares",
-    Font = cfg.font,
-    TextColor3 = cfg.faded,
-    TextSize = 10,
-    Size = UDim2.new(1, 0, 0, 20),
-    Position = UDim2.new(0, 0, 1, -20),
-    BackgroundTransparency = 1
-})
+UpdateTheme()
